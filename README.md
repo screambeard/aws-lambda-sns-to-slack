@@ -117,7 +117,7 @@ If you using a virtualenv (you should), then the following command will upload a
 
 ```shell
 zip -u sns-to-slack.zip lambda_function.py config.json
-pushd $VIRTUAL_ENV/lib/python2.7/site-packages
+pushd $VIRTUAL_ENV/lib/python3.6/site-packages
 zip -u -r $OLDPWD/sns-to-slack.zip . --exclude pip\* --exclude setuptools\*
 popd
 ```

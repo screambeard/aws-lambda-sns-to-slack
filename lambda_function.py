@@ -21,52 +21,62 @@ __maintainer__ = "Robb Wagoner"
 __email__ = "robb@pandastrike.com"
 __status__ = "Production"
 
-DEFAULT_USERNAME = 'AWS Lambda'
-DEFAULT_CHANNEL = '#webhook-tests'
+DEFAULT_USERNAME = 'AWS Alarms'
+DEFAULT_CHANNEL = '#alarms'
 
 
 def get_slack_emoji(event_src, topic_name, event_cond='default'):
     '''Map an event source, severity, and condition to an emoji
     '''
-    emoji_map = {
-        'autoscaling': {
-            'notices': {'default': ':scales:'}},
-        'cloudwatch': {
-            'notices': {
-                'ok': ':ok:',
-                'alarm': ':fire:',
-                'insuffcient_data': ':question:'},
-            'alerts': {
-                'ok': ':ok:',
-                'alarm': ':fire:',
-                'insuffcient_data': ':question:'}},
-        'elasticache': {
-            'notices': {'default': ':stopwatch:'}},
-        'rds': {
-            'notices': {'default': ':registered:'}}}
+    # print(event_src, topic_name, event_cond)
+    # emoji_map = {
+    #     'autoscaling': {
+    #         'notices': {'default': ':scales:'}},
+    #     'cloudwatch': {
+    #         'notices': {
+    #             'ok': ':ok:',
+    #             'alarm': ':fire:',
+    #             'insuffcient_data': ':question:'},
+    #         'alerts': {
+    #             'ok': ':ok:',
+    #             'alarm': ':fire:',
+    #             'insuffcient_data': ':question:'}},
+    #     'elasticache': {
+    #         'notices': {'default': ':stopwatch:'}},
+    #     'rds': {
+    #         'notices': {'default': ':registered:'}}}
+    #
+    # try:
+    #     return emoji_map[event_src][topic_name][event_cond]
+    # except KeyError:
+    #     if topic_name == 'alerts':
+    #         return ':fire:'
+    #     else:
+    #         return ':information_source:'
 
-    try:
-        return emoji_map[event_src][topic_name][event_cond]
-    except KeyError:
-        if topic_name == 'alerts':
-            return ':fire:'
-        else:
-            return ':information_source:'
+    if event_cond == 'alarm':
+        return ":rotating_light:"
+    elif event_cond == 'ok':
+        return ':ok:'
+    else:
+        return ':question:'
 
 
 def get_slack_username(event_src):
     '''Map event source to the Slack username
     '''
-    username_map = {
-        'cloudwatch': 'AWS CloudWatch',
-        'autoscaling': 'AWS AutoScaling',
-        'elasticache': 'AWS ElastiCache',
-        'rds': 'AWS RDS'}
+    return DEFAULT_USERNAME
 
-    try:
-        return username_map[event_src]
-    except KeyError:
-        return DEFAULT_USERNAME
+    # username_map = {
+    #     'cloudwatch': 'AWS CloudWatch',
+    #     'autoscaling': 'AWS AutoScaling',
+    #     'elasticache': 'AWS ElastiCache',
+    #     'rds': 'AWS RDS'}
+    #
+    # try:
+    #     return username_map[event_src]
+    # except KeyError:
+    #     return DEFAULT_USERNAME
 
 
 def get_slack_channel(region, event_src, topic_name, channel_map):
@@ -91,7 +101,7 @@ def lambda_handler(event, context):
     '''
     if 'LAMBDA_CONFIG' in os.environ:
         config = json.loads(os.getenv('LAMBDA_CONFIG'))
-    else:    
+    else:
         with open('config.json') as f:
             config = json.load(f)
 
@@ -196,10 +206,8 @@ def lambda_handler(event, context):
     # event_env = topic_name.split('-')[0]
     # event_sev = topic_name.split('-')[1]
 
-    # print('DEBUG:', topic_name, region, event_env, event_sev, event_src)
-
-    WEBHOOK_URL = "https://" + boto3.client('kms').decrypt(
-        CiphertextBlob=b64decode(config['encrypted_webhook_url']))['Plaintext']
+    print('DEBUG:', topic_name, region, event_src)
+    WEBHOOK_URL = os.getenv('SLACK_WEBHOOK')
 
     channel_map = config['channel_map']
 
@@ -242,7 +250,7 @@ if __name__ == '__main__':
         },
         "Type": "Notification",
         "UnsubscribeUrl": "EXAMPLE",
-        "TopicArn": "arn:aws:sns:us-east-1:123456789012:production-notices",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:alerts",
         "Subject": "OK: sns-slack-test-from-cloudwatch-total-cpu"
       }
     }
